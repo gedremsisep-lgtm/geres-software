@@ -4513,7 +4513,7 @@ const STORES = ['contratos','medicoes_c','medicoes','med_servicos','med_equip','
 const LOCAL_STORES = []; // fotos/scans agora no Supabase Storage
 const SUPABASE_URL = 'https://vvcfblxwiyzewajknrjc.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2Y2ZibHh3aXl6ZXdhamtucmpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyNjA2MDMsImV4cCI6MjEwNTgzNjYwM30.MYaTlwKix56ZZnuJeCIvX9pUrTetL7E8709EdB0sMM4';
-const SYSTEM_VERSION = '20261005-001'; // Limpeza completa: composição de custos, gráficos, cores e dados demo também migrados para os 18 serviços reais
+const SYSTEM_VERSION = '20261005-003'; // Limpeza completa: composição de custos, gráficos, cores e dados demo também migrados para os 18 serviços reais
 /* Auto-atualização por document.write foi removida: reescrever a página inteira
    colide com os const/let já declarados (ex.: SYSTEM_VERSION) e quebra o script.
    Atualização de versão continua pelo aviso via versao.json (banner de update). */
@@ -11022,12 +11022,21 @@ async function cronoRenderRecorrencia(){
   if(fil.length>500){ tb.innerHTML += `<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:8px;font-size:11px">Mostrando 500 de ${fil.length} — refine a busca</td></tr>`; }
 }
 
+/* Última OS emitida por ano (a planilha traz números adiantados/digitados errado, ex.: 0229/2026).
+   Com base definida, só avançam a sequência as OS criadas pelo próprio sistema (campo app:true). */
+const CRONO_OS_BASE = {2026:138};
+function cronoNumOSValido(txt, ano){
+  const m = String(txt||'').trim().match(/^([1-9]\d{0,2})\/(\d{4})$/);
+  return (m && parseInt(m[2],10)===ano) ? parseInt(m[1],10) : 0;
+}
 function cronoProximoNumeroDeLista(osAll, ano){
-  let maxN = 0;
+  const temBase = CRONO_OS_BASE[ano]!==undefined;
+  let maxN = CRONO_OS_BASE[ano]||0;
   osAll.forEach(o=>{
-    if(!o.nos) return;
-    const m = String(o.nos).match(/^(\d+)\/(\d{4})$/);
-    if(m && parseInt(m[2],10)===ano){ const n=parseInt(m[1],10); if(n>maxN) maxN=n; }
+    const n = cronoNumOSValido(o.nos, ano);
+    if(!n) return;
+    if(temBase && !o.app) return;
+    if(n>maxN) maxN=n;
   });
   return maxN+1;
 }
@@ -11051,7 +11060,7 @@ async function _cronoCriarOSParaArea(a, nos, cod, fid){
     obs:'Gerada automaticamente pela recorrência de '+(parseInt(a.recorr_dias)||90)+' dias',
     tos:'Programação Fixa',
     vm:parseFloat(a.vm)||0, cm:parseFloat(a.cm)||0, rc:parseFloat(a.rc)||0, rt:parseFloat(a.rt)||0, bl:parseFloat(a.bl)||0, mf:parseFloat(a.mf)||0,
-    ini:hoje, term:'', prev:hoje, ano:anoAtual,
+    ini:hoje, term:'', prev:hoje, ano:anoAtual, app:true,
   };
   obj.val = cronoCalcValor(obj);
   await dbAdd('cronograma_os', obj);
@@ -11241,8 +11250,11 @@ function cronoRenderLocaisOS(){
   </tr>`).join('');
 }
 
+let CRONO_OS_REUSO = '';
+let CRONO_EDIT_OS_APP = false;
 async function cronoNovaOS(){
   CRONO_EDIT_OS_ID = null;
+  CRONO_EDIT_OS_APP = false;
   CRONO_OS_LOCAIS = [];
   await cronoPopularBairrosSelect();
   document.getElementById('crono-os-sel-bairro').value='';
@@ -11251,9 +11263,20 @@ async function cronoNovaOS(){
   document.getElementById('crono-os-tos').value='Diário';
   const osAll = await dbGetAll('cronograma_os').catch(()=>[]);
   const ano = new Date().getFullYear();
-  document.getElementById('crono-os-nos').value = cronoFormatNumeroOS(cronoProximoNumeroDeLista(osAll, ano), ano);
+  const nosProx = cronoFormatNumeroOS(cronoProximoNumeroDeLista(osAll, ano), ano);
+  document.getElementById('crono-os-nos').value = nosProx;
   const prox = cronoProximosCodFid(osAll);
   CRONO_NEXT_COD = prox.cod; CRONO_NEXT_FID = prox.fid;
+  /* se esse número já tem endereços lançados (ex.: vindos da planilha), eles entram na lista e serão substituídos ao salvar */
+  CRONO_OS_REUSO = nosProx;
+  const jaLancados = osAll.filter(o=>String(o.nos||'').trim()===nosProx);
+  if(jaLancados.length){
+    CRONO_OS_LOCAIS = jaLancados.map(o=>({
+      _areaCod:o.cod, cod:o.cod, fid:o.fid||'', tipo:o.tipo||'', reg:o.reg||'', parc:o.parc||'', bai:o.bai||'',
+      r1:o.r1||'', r2:o.r2||'', r3:o.r3||'', r4:o.r4||'', srv:o.srv||'', obs:o.obs||'',
+      vm:o.vm||0, cm:o.cm||0, rc:o.rc||0, rt:o.rt||0, bl:o.bl||0, mf:o.mf||0 }));
+    _om('A OS '+nosProx+' já tinha '+jaLancados.length+' endereço(s) lançado(s); eles foram carregados na lista (remova ou complete e salve).');
+  }
   cronoRenderLocaisOS();
   document.getElementById('crono-os-form-title').innerHTML='<i class="ti ti-clipboard-list"></i> Nova Ordem de Serviço';
   document.getElementById('crono-os-modal').style.display='flex';
@@ -11264,6 +11287,7 @@ async function cronoEditarOS(id){
   const o = all.find(x=>x.id===id);
   if(!o){ _om('OS não encontrada.'); return; }
   CRONO_EDIT_OS_ID = id;
+  CRONO_EDIT_OS_APP = !!o.app;
   CRONO_OS_LOCAIS = [{
     _areaCod:o.cod, cod:o.cod, fid:o.fid||'', tipo:o.tipo||'', reg:o.reg||'', parc:o.parc||'', bai:o.bai||'',
     r1:o.r1||'', r2:o.r2||'', r3:o.r3||'', r4:o.r4||'',
@@ -11313,11 +11337,18 @@ async function cronoSalvarOS(){
         cod:l.cod, fid:l.fid, tipo:l.tipo, reg:l.reg, parc:l.parc, bai:l.bai,
         r1:l.r1, r2:l.r2, r3:l.r3, r4:l.r4, srv:l.srv, obs:l.obs,
         vm:l.vm, cm:l.cm, rc:l.rc, rt:l.rt, bl:l.bl, mf:l.mf, ano };
+      if(CRONO_EDIT_OS_APP) obj.app = true;
       obj.val = cronoCalcValor(obj);
       await dbPut('cronograma_os', obj);
     } else {
+      const todas = await dbGetAll('cronograma_os');
+      const existentes = todas.filter(o=>String(o.nos||'').trim()===nos);
+      if(existentes.length){
+        if(nos!==CRONO_OS_REUSO && !confirm('Já existe a OS '+nos+' com '+existentes.length+' endereço(s). Substituir pelos endereços desta lista?')) return null;
+        for(const o of existentes){ await dbDelete('cronograma_os', o.id); }
+      }
       for(const l of CRONO_OS_LOCAIS){
-        const obj = { nos, tos, sit, ini, prev:ini, term:'',
+        const obj = { nos, tos, sit, ini, prev:ini, term:'', app:true,
           cod:l.cod, fid:l.fid, tipo:l.tipo, reg:l.reg, parc:l.parc, bai:l.bai,
           r1:l.r1, r2:l.r2, r3:l.r3, r4:l.r4, srv:l.srv, obs:l.obs,
           vm:l.vm, cm:l.cm, rc:l.rc, rt:l.rt, bl:l.bl, mf:l.mf, ano };
@@ -18571,7 +18602,7 @@ const CANAL_SISTEMA = 'https://gedremsisep-lgtm.github.io/geres-software/';
 (function(){
   if(location.pathname.indexOf('/gedrem/')>=0) return; // aberto pelo carregador antigo: não interfere
   const vn=v=>{const m=String(v||'').match(/(\d{6,8})\D+(\d+)/);return m?(parseInt(m[1],10)*100000+parseInt(m[2],10)):0;};
-  let ultimaAcao=Date.now(), nova=null, timer=null;
+  let ultimaAcao=Date.now(), nova=null, cont=null, adiadoAte=0;
   ['pointerdown','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{ultimaAcao=Date.now();},true));
   function ocupado(){
     const lo=document.getElementById('login-overlay');
@@ -18579,32 +18610,36 @@ const CANAL_SISTEMA = 'https://gedremsisep-lgtm.github.io/geres-software/';
     if([...document.querySelectorAll('.modal-overlay')].some(e=>getComputedStyle(e).display!=='none')) return true;
     const ae=document.activeElement;
     if(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && !ae.closest('#login-overlay')) return true;
-    return (Date.now()-ultimaAcao) < 20000;
+    return (Date.now()-ultimaAcao) < 8000;
   }
-  function faixa(txt,btn){
+  function faixa(txt,adiar){
     let f=document.getElementById('atu-faixa');
     if(!f){ f=document.createElement('div'); f.id='atu-faixa';
       f.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:100000;background:#0b1f3a;color:#fff;padding:10px 18px;border-radius:24px;font:600 13px sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.4);display:flex;gap:12px;align-items:center';
       document.body.appendChild(f); }
-    f.innerHTML='<span>'+txt+'</span>'+(btn?'<button style="background:#16a34a;color:#fff;border:0;border-radius:14px;padding:5px 12px;font-weight:700;cursor:pointer" onclick="window.__geresAplicarAtu()">Atualizar agora</button>':'');
+    f.innerHTML='<span>'+txt+'</span>'+(adiar?'<button style="background:#475569;color:#fff;border:0;border-radius:14px;padding:5px 12px;font-weight:700;cursor:pointer" onclick="window.__geresAdiarAtu()">Adiar 10 min</button>':'');
   }
+  function limpaFaixa(){ const f=document.getElementById('atu-faixa'); if(f) f.remove(); }
   async function aplicar(){
     try{
+      if(cont){ clearInterval(cont); cont=null; }
       const t=parseInt(sessionStorage.getItem('geres_atu_tentativa')||'0',10);
-      if(t && Date.now()-t<15*60000) return; // trava anti-círculo
+      if(t && Date.now()-t<5*60000) return; // trava anti-círculo
       sessionStorage.setItem('geres_atu_tentativa',String(Date.now()));
       faixa('Atualizando o sistema para '+nova+'…',false);
       if(window.TESTE_CASCA && typeof window.TESTE_CASCA.atualizar==='function'){ await window.TESTE_CASCA.atualizar(); return; }
       try{ await fetch(CANAL_SISTEMA+'sistema.html',{cache:'reload'}); }catch(e){}
       try{ if(window.caches){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); } }catch(e){}
-      setTimeout(()=>location.reload(),1500);
+      setTimeout(()=>location.reload(),1200);
     }catch(e){}
   }
-  window.__geresAplicarAtu=function(){ sessionStorage.removeItem('geres_atu_tentativa'); aplicar(); };
+  window.__geresAdiarAtu=function(){ if(cont){clearInterval(cont);cont=null;} adiadoAte=Date.now()+10*60000; limpaFaixa(); };
   function tentarAplicar(){
-    if(!nova) return;
-    if(!ocupado()){ clearInterval(timer); timer=null; aplicar(); }
-    else { faixa('Nova versão '+nova+' disponível',true); if(!timer) timer=setInterval(tentarAplicar,20000); }
+    if(!nova || cont || Date.now()<adiadoAte) return;
+    if(!ocupado()){ aplicar(); return; }
+    let seg=20; // em uso: avisa e atualiza sozinho em 20 s (dá para adiar)
+    faixa('Nova versão '+nova+' — atualizando em '+seg+' s',true);
+    cont=setInterval(()=>{ seg--; if(seg<=0){ aplicar(); } else faixa('Nova versão '+nova+' — atualizando em '+seg+' s',true); },1000);
   }
   async function verificar(){
     if(!navigator.onLine) return;
@@ -18615,8 +18650,9 @@ const CANAL_SISTEMA = 'https://gedremsisep-lgtm.github.io/geres-software/';
       if(j && j.versao && vn(j.versao)>vn(SYSTEM_VERSION)){ nova=j.versao; tentarAplicar(); }
     }catch(e){}
   }
-  setTimeout(verificar,5000);
-  setInterval(verificar,30*60000);
+  setTimeout(verificar,4000);
+  setInterval(verificar,5*60000);
+  setInterval(tentarAplicar,30000);
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden) verificar(); });
   window.addEventListener('online',verificar);
 })();
