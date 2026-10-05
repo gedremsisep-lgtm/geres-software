@@ -4513,7 +4513,7 @@ const STORES = ['contratos','medicoes_c','medicoes','med_servicos','med_equip','
 const LOCAL_STORES = []; // fotos/scans agora no Supabase Storage
 const SUPABASE_URL = 'https://vvcfblxwiyzewajknrjc.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2Y2ZibHh3aXl6ZXdhamtucmpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyNjA2MDMsImV4cCI6MjEwNTgzNjYwM30.MYaTlwKix56ZZnuJeCIvX9pUrTetL7E8709EdB0sMM4';
-const SYSTEM_VERSION = '20261005-003'; // Limpeza completa: composição de custos, gráficos, cores e dados demo também migrados para os 18 serviços reais
+const SYSTEM_VERSION = '20261005-004'; // Limpeza completa: composição de custos, gráficos, cores e dados demo também migrados para os 18 serviços reais
 /* Auto-atualização por document.write foi removida: reescrever a página inteira
    colide com os const/let já declarados (ex.: SYSTEM_VERSION) e quebra o script.
    Atualização de versão continua pelo aviso via versao.json (banner de update). */
@@ -4688,11 +4688,23 @@ async function cloudGetAll(store){
   })();
   return _INFLIGHT[store];
 }
+/* O contador de ids da tabela compartilhada pode cair em ids já usados (erro 409/23505 records_pkey).
+   Cada tentativa avança o contador; repetimos até passar, só para este tipo de erro. */
+async function cloudRequestRetryId(path, opts){
+  const MAX = 150;
+  for(let t=0; t<MAX; t++){
+    try{ return await cloudRequest(path, opts); }
+    catch(e){
+      const dup = /23505|records_pkey|duplicate key/i.test(String(e&&e.message));
+      if(!dup || t===MAX-1) throw e;
+    }
+  }
+}
 async function cloudAdd(store,data){
   setDBStatus('saving');
   try{
     const { id, ...rest } = data;
-    const res = await cloudRequest('records', {
+    const res = await cloudRequestRetryId('records', {
       method: 'POST',
       headers: { 'Prefer': 'return=representation' },
       body: JSON.stringify({ store: SB(store), tenant: TENANT.toLowerCase(), data: tenantSelo({ ...rest, _ts: Date.now(), _user: CU }) }),
@@ -10774,7 +10786,7 @@ async function cloudAddBulk(store, arr){
   const CHUNK=500;
   for(let i=0;i<arr.length;i+=CHUNK){
     const slice=arr.slice(i,i+CHUNK).map(d=>({ store:SB(store), tenant:TENANT.toLowerCase(), data:tenantSelo({...d,_ts:Date.now(),_user:CU}) }));
-    await cloudRequest('records', { method:'POST', headers:{'Prefer':'return=minimal'}, body: JSON.stringify(slice) });
+    await cloudRequestRetryId('records', { method:'POST', headers:{'Prefer':'return=minimal'}, body: JSON.stringify(slice) });
   }
   cacheInvalidate(store);
 }
@@ -11343,10 +11355,7 @@ async function cronoSalvarOS(){
     } else {
       const todas = await dbGetAll('cronograma_os');
       const existentes = todas.filter(o=>String(o.nos||'').trim()===nos);
-      if(existentes.length){
-        if(nos!==CRONO_OS_REUSO && !confirm('Já existe a OS '+nos+' com '+existentes.length+' endereço(s). Substituir pelos endereços desta lista?')) return null;
-        for(const o of existentes){ await dbDelete('cronograma_os', o.id); }
-      }
+      if(existentes.length && nos!==CRONO_OS_REUSO && !confirm('Já existe a OS '+nos+' com '+existentes.length+' endereço(s). Substituir pelos endereços desta lista?')) return null;
       for(const l of CRONO_OS_LOCAIS){
         const obj = { nos, tos, sit, ini, prev:ini, term:'', app:true,
           cod:l.cod, fid:l.fid, tipo:l.tipo, reg:l.reg, parc:l.parc, bai:l.bai,
@@ -11355,6 +11364,8 @@ async function cronoSalvarOS(){
         obj.val = cronoCalcValor(obj);
         await dbAdd('cronograma_os', obj);
       }
+      /* só apaga os lançamentos antigos desse número depois de salvar os novos */
+      for(const o of existentes){ await dbDelete('cronograma_os', o.id); }
     }
     _om('Ordem de Serviço '+nos+' salva ('+CRONO_OS_LOCAIS.length+' endereço(s)).');
     cronoRenderOS();
@@ -18596,7 +18607,6 @@ async function sistemaAtualizar(){
   if(typeof rfRenderLista==='function')     rfRenderLista     =_d(rfRenderLista,D);
   if(typeof mapaRender==='function')        mapaRender        =_d(mapaRender,DM);
   if(typeof ssiRenderLista==='function')    ssiRenderLista    =_d(ssiRenderLista,D);
-
 /* ═════════ ATUALIZAÇÃO AUTOMÁTICA DO SISTEMA (canal GitHub Pages — modelo SSCONPAV) ═════════ */
 const CANAL_SISTEMA = 'https://gedremsisep-lgtm.github.io/geres-software/';
 (function(){
@@ -18656,7 +18666,6 @@ const CANAL_SISTEMA = 'https://gedremsisep-lgtm.github.io/geres-software/';
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden) verificar(); });
   window.addEventListener('online',verificar);
 })();
-
 })();
 </script>
 
