@@ -1,0 +1,36 @@
+name: Publicar versão do sistema
+on:
+  push:
+    branches: [main]
+    paths: ['sistema.html']
+  workflow_dispatch: {}
+permissions:
+  contents: write
+concurrency:
+  group: geres-software-publicar
+  cancel-in-progress: false
+jobs:
+  versao:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Escrever versao-sistema.json a partir do sistema.html
+        run: |
+          python3 - <<'PY'
+          import re, json, os
+          html = open('sistema.html', encoding='utf-8').read()
+          v = re.search(r"SYSTEM_VERSION\s*=\s*['\"]([^'\"]+)['\"]", html).group(1)
+          d = {}
+          if os.path.exists('versao-sistema.json'):
+              try: d = json.load(open('versao-sistema.json'))
+              except Exception: d = {}
+          d['versao'] = v
+          json.dump(d, open('versao-sistema.json', 'w'), ensure_ascii=False)
+          print('versao', v)
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'Publicador GERES'
+          git config user.email 'publicador-geres@users.noreply.github.com'
+          git add versao-sistema.json
+          git diff --cached --quiet || (git commit -m 'Publicador GERES: versao-sistema.json' && git pull --rebase && git push)
