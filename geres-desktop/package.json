@@ -1,0 +1,18 @@
+{
+  "name": "geres-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "main": "main.js",
+  "description": "Casca Windows do GERES Sistema. Baixa o sistema.html mais novo ao abrir; o .exe só precisa ser refeito se a casca mudar.",
+  "author": "GERES / SISEP - Campo Grande-MS",
+  "scripts": { "start": "electron .", "dist": "electron-builder --win --publish never" },
+  "devDependencies": { "electron": "^32.0.0", "electron-builder": "^25.0.0" },
+  "build": {
+    "appId": "br.ms.campogrande.geres.sistema",
+    "productName": "GERES Sistema",
+    "win": { "target": ["nsis"], "icon": "build/icon.ico", "artifactName": "GERES-Setup.exe" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
+    "directories": { "output": "dist" },
+    "files": ["main.js", "preload.js", "build/icon.ico"]
+  }
+}
