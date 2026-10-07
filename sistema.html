@@ -497,6 +497,7 @@ textarea{resize:vertical;min-height:60px}
   <div class="ni" id="n-cronograma" onclick="go('cronograma');cronoInit()"><i class="ti ti-calendar-time"></i>Cronograma<span class="nbadge" id="badge-crono" style="display:none">0</span></div>
   <div class="ni" id="n-mapa" onclick="go('mapa');mapaInit()"><i class="ti ti-map-pin"></i>Mapa de Demandas</div>
   <div class="ni" id="n-dpop" onclick="go('dpop')"><i class="ti ti-map-2"></i>Dados Populacionais</div>
+  <div class="ni" id="n-pracas" onclick="go('pracas');pracasInit()"><i class="ti ti-plant-2"></i>Praças</div>
   <div class="ns">Serviços Interno</div>
   <div class="ni" id="n-ci" onclick="go('ci')"><i class="ti ti-message-2"></i>C.I.</div>
   <div class="ni" id="n-ssi" onclick="go('ssi')"><i class="ti ti-file-invoice"></i>S.S.I.</div>
@@ -2845,6 +2846,7 @@ textarea{resize:vertical;min-height:60px}
 </div>
 
 <!-- ── BIBLIOTECA DE ARQUIVOS ── -->
+<div class="pg" id="pg-pracas"><div class="pt"><i class="ti ti-plant-2"></i> Praças</div><div style="color:var(--text2);font-size:13px;margin:-6px 0 12px">Cadastro e inventário das praças do município — condição dos itens e solicitação de implantação.</div><div class="tabs"><div class="tab on" onclick="stab(this,'prc-tab-cad')">Cadastro</div><div class="tab" onclick="stab(this,'prc-tab-lst');pracaRenderLista()">Praças cadastradas</div><div class="tab" onclick="stab(this,'prc-tab-map');pracaMapInit()">Mapa de praças</div></div><div id="prc-tab-cad"><div class="card"><div class="fhead"><i class="ti ti-map-pin"></i> Cadastro / vistoria da praça</div><input type="hidden" id="prc-id"><div class="fr3"><div class="fg fl"><label>Nome da praça *</label><input id="prc-nome"></div><div class="fg"><label>Bairro</label><input id="prc-bairro"></div><div class="fg"><label>Região</label><input id="prc-regiao"></div></div><div class="fr2"><div class="fg fl"><label>Endereço / ruas do entorno</label><div id="prc-ruas"></div><button type="button" class="btn" style="padding:3px 10px;margin-top:4px" onclick="pracaAddRua()"><i class="ti ti-plus"></i> Adicionar rua</button></div><div class="fg"><label>Data da vistoria</label><input type="date" id="prc-data"></div></div><div class="fg"><label>Observações gerais</label><textarea id="prc-obs" rows="2"></textarea></div><div class="sh" style="margin-top:8px"><i class="ti ti-list-check"></i> Itens da praça (padrão ANEXO I.4)</div><div style="font-size:11px;color:var(--text3);margin-bottom:4px">Marque <b>Possui</b> e informe a <b>condição</b>; marque <b>Solicitar</b> nos itens a implantar.</div><div id="prc-itens"></div><div class="brow" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn bp" style="background:#16a34a;border-color:#16a34a" onclick="pracaSalvar()"><i class="ti ti-device-floppy"></i> Salvar praça</button><button class="btn" onclick="pracaGerarSolicitacao()"><i class="ti ti-file-text"></i> Solicitar implantação (gerar documento)</button><button class="btn" onclick="pracaImprimirFicha()"><i class="ti ti-printer"></i> Imprimir ficha</button><button class="btn" onclick="pracaNovo()"><i class="ti ti-plus"></i> Nova praça</button></div><div id="prc-msg" style="margin-top:8px"></div></div><div id="prc-print" style="display:none"></div></div><div id="prc-tab-lst" style="display:none"><div class="card"><div class="fhead"><i class="ti ti-list"></i> Praças cadastradas</div><input id="prc-busca" placeholder="Buscar praça, bairro..." oninput="pracaRenderLista()" style="width:100%;margin-bottom:8px"><div style="overflow:auto"><table class="tw"><thead><tr><th>Praça</th><th>Bairro</th><th>Região</th><th>Possui</th><th>Solic.</th><th></th></tr></thead><tbody id="prc-tb"></tbody></table></div></div></div><div id="prc-tab-map" style="display:none"><div class="card"><div class="fhead"><i class="ti ti-map-2"></i> Mapa das praças</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><button class="btn" id="prc-map-btn" onclick="pracaMapLocalizarTodas()"><i class="ti ti-map-pin"></i> Localizar praças no mapa</button><span id="prc-map-stat" style="font-size:11px;color:var(--text3);align-self:center"></span></div><div style="font-size:11px;color:var(--text3);margin-bottom:6px">Os pontos são geocodificados pelo endereço e salvos; clique em <b>📍</b> na lista para localizar uma praça específica.</div><div id="prc-map" style="height:520px;border-radius:8px;border:1px solid var(--border2);background:#e8eef3"></div></div></div></div>
 <div class="pg" id="pg-bib">
   <div class="pt">Biblioteca de Arquivos</div>
   <div class="card" style="padding:16px;margin-bottom:14px">
@@ -4508,12 +4510,12 @@ const AUTH_RPC_FALLBACK  = 'gedrem_login';    // compartilhado da SUSEP
 const AUTH_HEADER        = 'x-gedrem-token';  // aceito hoje pela SUSEP
 const AUTH_HEADER_TENANT = 'x-geres-token'; // próprio do GERES
 let   AUTH_HEADER_TENANT_ATIVO = false;       // ligar após criar a política
-const STORES = ['contratos','medicoes_c','medicoes','med_servicos','med_equip','falacg','oficios','programacao','relatorio_foto','ctrl_servicos','ofc_scans','equipes','funcionarios','materiais','composicoes','despesas','ci','ssi','setores','app_config','saideiras','req_abastecimento','sol_almoxarifado','indenizacoes','dispositivos','biblioteca','diario_bordo','patio_caminhoes','patio_cimento','documentosConsórcio','processo_etp','vale_transporte','cronograma_areas','cronograma_os'];
+const STORES = ['contratos','medicoes_c','medicoes','med_servicos','med_equip','falacg','oficios','programacao','relatorio_foto','ctrl_servicos','ofc_scans','equipes','funcionarios','materiais','composicoes','despesas','ci','ssi','setores','app_config','saideiras','req_abastecimento','sol_almoxarifado','indenizacoes','dispositivos','biblioteca','diario_bordo','patio_caminhoes','patio_cimento','documentosConsórcio','processo_etp','vale_transporte','cronograma_areas','cronograma_os','pracas'];
 
 const LOCAL_STORES = []; // fotos/scans agora no Supabase Storage
 const SUPABASE_URL = 'https://vvcfblxwiyzewajknrjc.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2Y2ZibHh3aXl6ZXdhamtucmpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyNjA2MDMsImV4cCI6MjEwNTgzNjYwM30.MYaTlwKix56ZZnuJeCIvX9pUrTetL7E8709EdB0sMM4';
-const SYSTEM_VERSION = '20261005-004'; // Limpeza completa: composição de custos, gráficos, cores e dados demo também migrados para os 18 serviços reais
+const SYSTEM_VERSION = '20261007-001'; // Limpeza completa: composição de custos, gráficos, cores e dados demo também migrados para os 18 serviços reais
 /* Auto-atualização por document.write foi removida: reescrever a página inteira
    colide com os const/let já declarados (ex.: SYSTEM_VERSION) e quebra o script.
    Atualização de versão continua pelo aviso via versao.json (banner de update). */
@@ -5068,7 +5070,7 @@ const PERMS={
   b:['dash','medc','med','oficios','ci','ssi','said','reqab','solalm','dboard','indeniz','bib','marmitex','resumo','prog','mapa','patio'],
   c:['dash','medc','med','oficios','ci','ssi','said','reqab','solalm','dboard','indeniz','bib','marmitex','resumo','prog','mapa','patio'],
 };
-['g','a','b','c'].forEach(function(r){ if(PERMS[r]&&PERMS[r].indexOf('proc')<0) PERMS[r].push('proc'); if(PERMS[r]&&PERMS[r].indexOf('dpop')<0) PERMS[r].push('dpop'); if(PERMS[r]&&PERMS[r].indexOf('vt')<0) PERMS[r].push('vt'); if(PERMS[r]&&PERMS[r].indexOf('cronograma')<0) PERMS[r].push('cronograma'); });
+['g','a','b','c'].forEach(function(r){ if(PERMS[r]&&PERMS[r].indexOf('pracas')<0) PERMS[r].push('pracas'); if(PERMS[r]&&PERMS[r].indexOf('proc')<0) PERMS[r].push('proc'); if(PERMS[r]&&PERMS[r].indexOf('dpop')<0) PERMS[r].push('dpop'); if(PERMS[r]&&PERMS[r].indexOf('vt')<0) PERMS[r].push('vt'); if(PERMS[r]&&PERMS[r].indexOf('cronograma')<0) PERMS[r].push('cronograma'); });
 const HOMES={g:'dash',a:'cs',b:'med',c:'med'};
 let CU='g';
 
@@ -10752,6 +10754,119 @@ async function cronoAutoSeed(){
     }
   }catch(e){ console.warn('cronoAutoSeed falhou', e); _om('Falha ao importar dados do Cronograma: '+e.message); }
 }
+
+/* ════════════════ MÓDULO PRAÇAS (trazido do GEDREM) ════════════════ */
+var PRACA_ITENS=[{"g":"Serviços Preliminares","itens":[{"c":"1.1","n":"Placa de obra"},{"c":"1.2","n":"Container (escritório)"},{"c":"1.3","n":"Mobilização/desmob. de container"},{"c":"1.4","n":"Banheiro químico"},{"c":"1.5","n":"Caçamba (4m³)"}]},{"g":"Adequação do Terreno","itens":[{"c":"2.1","n":"Limpeza de camada vegetal"},{"c":"2.2","n":"Corte/recorte de árvore"},{"c":"2.3","n":"Remoção de raízes"}]},{"g":"Instalações Hidrossanitárias e Elétricas","itens":[{"c":"3.1","n":"Entrada de energia"},{"c":"3.2","n":"Mureta de hidrômetro"}]},{"g":"Calçada e Rampa","itens":[{"c":"4.1","n":"Rampa de acessibilidade (piso tátil)"},{"c":"4.2","n":"Passeio/calçada de concreto"}]},{"g":"Pista de Cooper","itens":[{"c":"5.1","n":"Pista de cooper (CBUQ)"}]},{"g":"Quadra de Areia","itens":[{"c":"6.1","n":"Quadra de areia 15x24 (alambrado+rede)"}]},{"g":"Playground","itens":[{"c":"7.1","n":"Piso emborrachado"},{"c":"7.2","n":"Playground (KMP 301 ou similar)"}]},{"g":"Academia ao Ar Livre","itens":[{"c":"8.1","n":"Equipamentos ATI (3ª idade)"},{"c":"8.2","n":"Piso da academia"},{"c":"8.3","n":"Banco em alvenaria"}]},{"g":"Urbanização","itens":[{"c":"9.1","n":"Lixeira metálica dupla (60L)"},{"c":"9.2","n":"Banco metálico com encosto"}]},{"g":"Paisagismo","itens":[{"c":"10.1","n":"Grama batatais (adubo+irrigação)"}]},{"g":"Administração da Obra","itens":[{"c":"11.1","n":"Engenheiro civil"},{"c":"11.2","n":"Encarregado geral"}]}];
+var PRACA_CONDS=["Bom","Regular","Ruim","Péssimo"];
+var _prcEditId=null, _prcMap=null, _prcMarkers=null, _prcGeoRun=false;
+
+function _prcEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function _prcHoje(){return new Date().toISOString().slice(0,10);}
+function _prcMsg(t,err){var m=document.getElementById('prc-msg');if(m)m.innerHTML='<span style="color:'+(err?'#c0392b':'#16a34a')+';font-weight:600">'+_prcEsc(t)+'</span>';}
+function pracaItemNome(c){for(var i=0;i<PRACA_ITENS.length;i++){for(var j=0;j<PRACA_ITENS[i].itens.length;j++){if(PRACA_ITENS[i].itens[j].c===c)return PRACA_ITENS[i].itens[j].n;}}return c;}
+async function pracasInit(){pracaRenderItensForm({});pracaNovo();}
+
+function pracaRenderItensForm(itens){itens=itens||{};var h='';PRACA_ITENS.forEach(function(grp){h+='<div style="margin:10px 0 2px;font-weight:700;color:var(--blue);font-size:12px">'+_prcEsc(grp.g)+'</div>';grp.itens.forEach(function(it){var d=itens[it.c]||{};var opts='<option value="">—</option>'+PRACA_CONDS.map(function(cc){return '<option value="'+cc+'"'+((d.cond||'')===cc?' selected':'')+'>'+cc+'</option>';}).join('');h+='<div class="prc-item-row" data-c="'+it.c+'" style="display:grid;grid-template-columns:1.5fr 86px 110px 1.3fr 92px;gap:8px;align-items:center;padding:5px 4px;border-bottom:1px solid var(--border2)"><span style="font-size:12px"><b style="color:var(--text3);font-size:10px">'+it.c+'</b> '+_prcEsc(it.n)+'</span><label style="font-size:11px;display:flex;gap:4px;align-items:center"><input type="checkbox" class="prc-possui" '+(d.possui?'checked':'')+'> Possui</label><select class="prc-cond" style="font-size:11px;padding:3px">'+opts+'</select><input class="prc-iobs" placeholder="observação" value="'+_prcEsc(d.obs||'')+'" style="font-size:11px;padding:3px"><label style="font-size:11px;display:flex;gap:4px;align-items:center;color:#c0392b"><input type="checkbox" class="prc-solic" '+(d.solicitar?'checked':'')+'> Solicitar</label></div>';});});var el=document.getElementById('prc-itens');if(el)el.innerHTML=h;}
+
+function pracaRenderRuas(list){var box=document.getElementById('prc-ruas');if(!box)return;list=(list&&list.length)?list:[''];box.innerHTML=list.map(function(r){return '<div class="prc-rua-row" style="display:flex;gap:6px;margin-bottom:4px"><input class="prc-rua" value="'+_prcEsc(r||'')+'" placeholder="Rua / Avenida" style="flex:1"><button type="button" class="btn" style="padding:3px 9px;color:#c0392b" onclick="this.parentNode.remove()">×</button></div>';}).join('');}
+function pracaAddRua(val){var box=document.getElementById('prc-ruas');if(!box)return;var div=document.createElement('div');div.className='prc-rua-row';div.style.cssText='display:flex;gap:6px;margin-bottom:4px';div.innerHTML='<input class="prc-rua" value="'+_prcEsc(val||'')+'" placeholder="Rua / Avenida" style="flex:1"><button type="button" class="btn" style="padding:3px 9px;color:#c0392b" onclick="this.parentNode.remove()">×</button>';box.appendChild(div);}
+function pracaColetaRuas(){var out=[];document.querySelectorAll('#prc-ruas .prc-rua').forEach(function(inp){var v=(inp.value||'').trim();if(v)out.push(v);});return out;}
+function pracaColetaItens(){var itens={};document.querySelectorAll('#prc-itens .prc-item-row').forEach(function(row){var c=row.getAttribute('data-c');var possui=row.querySelector('.prc-possui').checked;var cond=row.querySelector('.prc-cond').value;var obs=(row.querySelector('.prc-iobs').value||'').trim();var solic=row.querySelector('.prc-solic').checked;if(possui||cond||obs||solic)itens[c]={possui:possui,cond:cond,obs:obs,solicitar:solic};});return itens;}
+
+function pracaNovo(){_prcEditId=null;['prc-nome','prc-bairro','prc-regiao','prc-obs'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});var h=document.getElementById('prc-id');if(h)h.value='';var dd=document.getElementById('prc-data');if(dd)dd.value=_prcHoje();pracaRenderRuas(['']);pracaRenderItensForm({});_prcMsg('');}
+
+async function pracaSalvar(){var nome=(document.getElementById('prc-nome').value||'').trim();if(!nome){_prcMsg('Informe o nome da praça.',true);return false;}var rec={nome:nome,bairro:(document.getElementById('prc-bairro').value||'').trim(),regiao:(document.getElementById('prc-regiao').value||'').trim(),ruas:pracaColetaRuas(),endereco:pracaColetaRuas().join(' / '),data:document.getElementById('prc-data').value||_prcHoje(),obs:(document.getElementById('prc-obs').value||'').trim(),itens:pracaColetaItens(),_ts:Date.now()};try{if(_prcEditId){rec.id=_prcEditId;var all=await dbGetAll('pracas');var orig=(all||[]).find(function(x){return x.id===_prcEditId;})||{};rec.solicitacoes=orig.solicitacoes||[];if(orig.lat&&orig.lon){rec.lat=orig.lat;rec.lon=orig.lon;}await dbPut('pracas',rec);}else{rec.solicitacoes=[];_prcEditId=await dbAdd('pracas',rec);var h=document.getElementById('prc-id');if(h)h.value=_prcEditId;}_prcMsg('✅ Praça salva.');try{await pracaRenderLista();}catch(e){}return true;}catch(e){_prcMsg('❌ Falha ao salvar: '+(e&&e.message||e),true);return false;}}
+
+async function pracaRenderLista(){var all=[];try{all=await dbGetAll('pracas');}catch(e){}var busca=((document.getElementById('prc-busca')||{}).value||'').toLowerCase();all=(all||[]).filter(function(x){return !busca||JSON.stringify(x).toLowerCase().indexOf(busca)>=0;}).sort(function(a,b){return String(a.nome||'').localeCompare(String(b.nome||''));});var tb=document.getElementById('prc-tb');if(!tb)return;tb.innerHTML=all.length?all.map(function(p){var np=Object.keys(p.itens||{}).filter(function(c){return p.itens[c]&&p.itens[c].possui;}).length;var ns=(p.solicitacoes||[]).length;return '<tr><td><b>'+_prcEsc(p.nome||'—')+'</b></td><td>'+_prcEsc(p.bairro||'—')+'</td><td>'+_prcEsc(p.regiao||'—')+'</td><td style="text-align:center">'+np+'</td><td style="text-align:center">'+ns+'</td><td style="white-space:nowrap;text-align:right"><button class="btn" style="padding:3px 8px" onclick="pracaMapLocalizar('+p.id+')" title="Localizar no mapa">📍</button> <button class="btn" style="padding:3px 8px" onclick="pracaEditar('+p.id+')" title="Editar">✏️</button> <button class="btn" style="padding:3px 8px" onclick="pracaImprimirId('+p.id+')" title="Documento">🖨️</button> <button class="btn" style="padding:3px 8px;color:#c0392b" onclick="pracaExcluir('+p.id+')" title="Excluir">🗑️</button></td></tr>';}).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:14px">Nenhuma praça cadastrada.</td></tr>';}
+
+async function pracaEditar(id){var all=await dbGetAll('pracas');var p=(all||[]).find(function(x){return x.id===id;});if(!p)return;_prcEditId=id;var t0=document.querySelector('#pg-pracas .tabs .tab:nth-child(1)');if(t0)stab(t0,'prc-tab-cad');document.getElementById('prc-id').value=id;document.getElementById('prc-nome').value=p.nome||'';document.getElementById('prc-bairro').value=p.bairro||'';document.getElementById('prc-regiao').value=p.regiao||'';pracaRenderRuas((p.ruas&&p.ruas.length)?p.ruas:(p.endereco?String(p.endereco).split(' / '):['']));document.getElementById('prc-data').value=p.data||_prcHoje();document.getElementById('prc-obs').value=p.obs||'';pracaRenderItensForm(p.itens||{});_prcMsg('Editando: '+(p.nome||''));try{window.scrollTo(0,0);}catch(e){}}
+
+async function pracaExcluir(id){if(!confirm('Excluir esta praça definitivamente?'))return;try{await dbDelete('pracas',id);if(_prcEditId===id)pracaNovo();await pracaRenderLista();}catch(e){}}
+
+async function pracaGerarSolicitacao(){var okS=await pracaSalvar();if(!okS)return;var all=await dbGetAll('pracas');var p=(all||[]).find(function(x){return x.id===_prcEditId;});if(!p)return;var sol=Object.keys(p.itens||{}).filter(function(c){return p.itens[c]&&p.itens[c].solicitar;});if(!sol.length){_prcMsg('Marque "Solicitar" nos itens que deseja implantar.',true);return;}p.solicitacoes=p.solicitacoes||[];p.solicitacoes.push({data:_prcHoje(),itens:sol.slice(),por:(typeof CU!=='undefined'?CU:'')});try{await dbPut('pracas',p);}catch(e){}pracaImprimirDoc(p,sol);_prcMsg('✅ Solicitação registrada e documento gerado.');try{await pracaRenderLista();}catch(e){}}
+
+function pracaImprimirDoc(p,sol){var hj=new Date().toLocaleDateString('pt-BR');var rows=sol.map(function(c,i){return '<tr><td style="border:1px solid #999;padding:4px 6px;text-align:center">'+(i+1)+'</td><td style="border:1px solid #999;padding:4px 6px;text-align:center">'+c+'</td><td style="border:1px solid #999;padding:4px 6px">'+_prcEsc(pracaItemNome(c))+'</td></tr>';}).join('');var hdr=(typeof ciDocHeader==='function')?ciDocHeader('Solicitação de Implantação','',hj):'';var ass=(typeof ciDocAssinatura==='function')?ciDocAssinatura():'';var rod=(typeof ciDocRodape==='function')?ciDocRodape():'';var body='<div style="font-family:Arial,sans-serif;color:#1a1a1a;font-size:11pt">'+hdr+'<div style="text-align:center;font-weight:700;font-size:13pt;margin:10px 0">SOLICITAÇÃO DE IMPLANTAÇÃO DE ITENS — PRAÇA</div><table style="width:100%;border-collapse:collapse;margin-bottom:12px;font-size:10pt"><tr><td style="font-weight:700;padding:4px 6px;border:1px solid #ccc;background:#D6E9FB;width:28%">Praça</td><td style="padding:4px 6px;border:1px solid #ccc">'+_prcEsc(p.nome||'—')+'</td></tr><tr><td style="font-weight:700;padding:4px 6px;border:1px solid #ccc;background:#D6E9FB">Bairro / Região</td><td style="padding:4px 6px;border:1px solid #ccc">'+_prcEsc((p.bairro||'—')+(p.regiao?(' · '+p.regiao):''))+'</td></tr><tr><td style="font-weight:700;padding:4px 6px;border:1px solid #ccc;background:#D6E9FB">Endereço</td><td style="padding:4px 6px;border:1px solid #ccc">'+_prcEsc(p.endereco||'—')+'</td></tr><tr><td style="font-weight:700;padding:4px 6px;border:1px solid #ccc;background:#D6E9FB">Data</td><td style="padding:4px 6px;border:1px solid #ccc">'+hj+'</td></tr></table><p style="text-align:justify;margin:10px 0">Solicitamos a implantação dos itens padronizados abaixo relacionados, conforme especificações técnicas (ANEXO I.2) e planilha referencial (ANEXO I.4), na praça acima identificada:</p><table style="width:100%;border-collapse:collapse;font-size:10pt"><thead><tr><th style="border:1px solid #999;padding:4px 6px;background:#1f3a66;color:#fff;width:40px">#</th><th style="border:1px solid #999;padding:4px 6px;background:#1f3a66;color:#fff;width:70px">Item</th><th style="border:1px solid #999;padding:4px 6px;background:#1f3a66;color:#fff">Descrição</th></tr></thead><tbody>'+rows+'</tbody></table>'+(p.obs?('<p style="margin-top:10px"><b>Observações:</b> '+_prcEsc(p.obs)+'</p>'):'')+ass+rod+'</div>';var el=document.getElementById('prc-print');if(el)el.innerHTML=body;if(typeof _printDocIframe==='function'){_printDocIframe('prc-print','size:A4 portrait;margin:12mm');}else{try{window.print();}catch(e){}}}
+
+async function pracaImprimirId(id){var all=await dbGetAll('pracas');var p=(all||[]).find(function(x){return x.id===id;});if(!p)return;var sol=Object.keys(p.itens||{}).filter(function(c){return p.itens[c]&&p.itens[c].solicitar;});pracaImprimirDoc(p,sol.length?sol:Object.keys(p.itens||{}));}
+
+function pracaImprimirFicha(){if(!_prcEditId){_prcMsg('Salve a praça antes de imprimir a ficha.',true);return;}var nome=(document.getElementById('prc-nome').value||'').trim();var bairro=(document.getElementById('prc-bairro').value||'').trim();var regiao=(document.getElementById('prc-regiao').value||'').trim();var endereco=pracaColetaRuas().join(' / ');var itens=pracaColetaItens();var hj=new Date().toLocaleDateString('pt-BR');var rows='';PRACA_ITENS.forEach(function(grp){rows+='<tr><td colspan="5" style="border:1px solid #999;padding:3px 6px;background:#e8eef7;font-weight:700">'+_prcEsc(grp.g)+'</td></tr>';grp.itens.forEach(function(it){var d=itens[it.c]||{};rows+='<tr><td style="border:1px solid #999;padding:3px 6px;text-align:center">'+it.c+'</td><td style="border:1px solid #999;padding:3px 6px">'+_prcEsc(it.n)+'</td><td style="border:1px solid #999;padding:3px 6px;text-align:center">'+(d.possui?'SIM':'NÃO')+'</td><td style="border:1px solid #999;padding:3px 6px;text-align:center">'+_prcEsc(d.cond||'—')+'</td><td style="border:1px solid #999;padding:3px 6px">'+_prcEsc(d.obs||'')+'</td></tr>';});});var hdr=(typeof ciDocHeader==='function')?ciDocHeader('Ficha de Vistoria','',hj):'';var ass=(typeof ciDocAssinatura==='function')?ciDocAssinatura():'';var rod=(typeof ciDocRodape==='function')?ciDocRodape():'';var body='<div style="font-family:Arial,sans-serif;color:#1a1a1a;font-size:10pt">'+hdr+'<div style="text-align:center;font-weight:700;font-size:13pt;margin:10px 0">FICHA DE VISTORIA — PRAÇA</div><div style="margin-bottom:8px"><b>Praça:</b> '+_prcEsc(nome)+' &nbsp; <b>Bairro:</b> '+_prcEsc(bairro||'—')+' &nbsp; <b>Região:</b> '+_prcEsc(regiao||'—')+'<br><b>Endereço:</b> '+_prcEsc(endereco||'—')+' &nbsp; <b>Data:</b> '+hj+'</div><table style="width:100%;border-collapse:collapse;font-size:9pt"><thead><tr><th style="border:1px solid #999;padding:3px 6px;background:#1f3a66;color:#fff;width:50px">Item</th><th style="border:1px solid #999;padding:3px 6px;background:#1f3a66;color:#fff">Descrição</th><th style="border:1px solid #999;padding:3px 6px;background:#1f3a66;color:#fff;width:50px">Possui</th><th style="border:1px solid #999;padding:3px 6px;background:#1f3a66;color:#fff;width:70px">Condição</th><th style="border:1px solid #999;padding:3px 6px;background:#1f3a66;color:#fff">Observação</th></tr></thead><tbody>'+rows+'</tbody></table>'+ass+rod+'</div>';var el=document.getElementById('prc-print');if(el)el.innerHTML=body;if(typeof _printDocIframe==='function'){_printDocIframe('prc-print','size:A4 portrait;margin:12mm');}else{try{window.print();}catch(e){}}}
+
+function _prcLeafletReady(cb){
+  if(window.L){cb();return;}
+  if(window._prcLeafletLoading){var iv=setInterval(function(){if(window.L){clearInterval(iv);cb();}},200);return;}
+  window._prcLeafletLoading=true;
+  var css=document.createElement('link');css.rel='stylesheet';css.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';document.head.appendChild(css);
+  var s=document.createElement('script');s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+  s.onload=function(){cb();};
+  s.onerror=function(){window._prcLeafletLoading=false;var el=document.getElementById('prc-map');if(el)el.innerHTML='<div style="padding:16px;color:#c0392b;font-size:13px">Não foi possível carregar o mapa (sem internet?).</div>';};
+  document.head.appendChild(s);
+}
+function pracaMapInit(){
+  var el=document.getElementById('prc-map');if(!el)return;
+  _prcLeafletReady(function(){
+    if(!_prcMap){
+      _prcMap=L.map('prc-map').setView([-20.4697,-54.6201],12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(_prcMap);
+      _prcMarkers=L.layerGroup().addTo(_prcMap);
+    }
+    setTimeout(function(){try{_prcMap.invalidateSize();}catch(e){}},200);
+    pracaMapRender();
+  });
+}
+async function pracaMapRender(){
+  if(!_prcMarkers)return;
+  _prcMarkers.clearLayers();
+  var all=[];try{all=await dbGetAll('pracas');}catch(e){}
+  var n=0;
+  all.forEach(function(p){ if(p.lat&&p.lon){ _prcAddMarker(p); n++; } });
+  var st=document.getElementById('prc-map-stat');if(st&&!_prcGeoRun)st.textContent=n+' de '+all.length+' localizadas';
+}
+function _prcAddMarker(p){
+  if(!_prcMarkers||!p.lat||!p.lon)return null;
+  var np=Object.keys(p.itens||{}).filter(function(c){return p.itens[c]&&p.itens[c].possui;}).length;
+  var m=L.marker([p.lat,p.lon]);
+  m.bindPopup('<b>'+_prcEsc(p.nome||'—')+'</b><br>'+_prcEsc(p.regiao||'')+'<br><span style="font-size:11px">'+_prcEsc(p.endereco||'')+'</span><br>Itens: '+np);
+  m.addTo(_prcMarkers);
+  return m;
+}
+async function _prcGeocodeOne(p){
+  var base=(p.ruas&&p.ruas[0])?p.ruas[0]:(p.endereco||p.nome||'');
+  var q=base+', Campo Grande, MS, Brasil';
+  try{
+    var r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q='+encodeURIComponent(q),{headers:{'Accept':'application/json'}});
+    var j=await r.json();
+    if(j&&j[0]){ p.lat=parseFloat(j[0].lat); p.lon=parseFloat(j[0].lon); try{await dbPut('pracas',p);}catch(e){} return true; }
+  }catch(e){}
+  return false;
+}
+async function pracaMapLocalizar(id){
+  try{var _mt=document.querySelector('#pg-pracas .tabs .tab:nth-child(3)');if(_mt)stab(_mt,'prc-tab-map');}catch(e){}
+  pracaMapInit();
+  var all=await dbGetAll('pracas');var p=(all||[]).find(function(x){return x.id===id;});if(!p)return;
+  if(!(p.lat&&p.lon)){ var ok=await _prcGeocodeOne(p); if(!ok){_prcMsg('Não localizei o endereço desta praça no mapa.',true);return;} }
+  var m=_prcAddMarker(p);
+  if(_prcMap){_prcMap.setView([p.lat,p.lon],16);} if(m){try{m.openPopup();}catch(e){}}
+}
+async function pracaMapLocalizarTodas(){
+  var btn=document.getElementById('prc-map-btn');
+  if(_prcGeoRun){ _prcGeoRun=false; if(btn)btn.innerHTML='<i class="ti ti-map-pin"></i> Localizar praças no mapa'; return; }
+  pracaMapInit();
+  var all=[];try{all=await dbGetAll('pracas');}catch(e){}
+  var pend=all.filter(function(p){return !(p.lat&&p.lon);});
+  var st=document.getElementById('prc-map-stat');
+  if(!pend.length){ if(st)st.textContent='Todas as '+all.length+' praças já estão localizadas.'; await pracaMapRender(); return; }
+  _prcGeoRun=true; if(btn)btn.innerHTML='<i class="ti ti-player-stop"></i> Parar';
+  for(var i=0;i<pend.length;i++){
+    if(!_prcGeoRun)break;
+    if(st)st.textContent='Localizando '+(i+1)+'/'+pend.length+'…';
+    var ok=await _prcGeocodeOne(pend[i]);
+    if(ok)_prcAddMarker(pend[i]);
+    await new Promise(function(res){setTimeout(res,1100);});
+  }
+  _prcGeoRun=false; if(btn)btn.innerHTML='<i class="ti ti-map-pin"></i> Localizar praças no mapa';
+  await pracaMapRender();
+}
+/* ════════════════ FIM MÓDULO PRAÇAS ════════════════ */
 
 async function cronoInit(){
   await cronoAutoSeed();
@@ -18666,6 +18781,7 @@ const CANAL_SISTEMA = 'https://gedremsisep-lgtm.github.io/geres-software/';
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden) verificar(); });
   window.addEventListener('online',verificar);
 })();
+
 })();
 </script>
 
